@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 
 import MoviesList from './components/MoviesList'
 import './App.css'
+import AddMovie from './components/AddMovie'
 
 function App() {
   const [movies, setMovies] = useState([])
@@ -33,25 +34,40 @@ function App() {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch('https://swapi.dev/api/films/')
+      const res = await fetch(
+        'https://react-http-d3f5e-default-rtdb.firebaseio.com/movies.json'
+      )
+
       if (!res.ok) {
         throw new Error('Something went wrong!')
       }
+
       const data = await res.json()
-      const transformedData = await data.results.map((movieData) => {
-        return {
-          title: movieData.title,
-          id: movieData.episode_id,
-          openingText: movieData.opening_crawl,
-          releaseDate: movieData.release_date,
-        }
-      })
-      setMovies(transformedData)
+
+      console.log(data)
+
+      const loadedMovies = []
+
+      for (const key in data) {
+        loadedMovies.push({
+          id: key,
+          title: data[key].title,
+          openingText: data[key].openingText,
+          releaseDate: data[key].releaseDate,
+        })
+      }
+
+      setMovies(loadedMovies)
     } catch (error) {
       setError(error.message)
     }
+
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    fetchMoviesHandler()
+  }, [])
 
   // fetch method
 
@@ -75,6 +91,23 @@ function App() {
   //     })
   // }
 
+  const addMovieHandler = async (movie) => {
+    const response = await fetch(
+      'https://react-http-d3f5e-default-rtdb.firebaseio.com/movies.json',
+      {
+        method: 'POST',
+        body: JSON.stringify(movie),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    const data = await response.json()
+
+    console.log(data)
+  }
+
   let content = <p>Click to find</p>
 
   if (movies.length > 0) {
@@ -92,11 +125,12 @@ function App() {
   return (
     <React.Fragment>
       <section>
-        <button onClick={fetchMoviesHandler}>Fetch Movies</button>
+        <AddMovie onAddMovie={addMovieHandler} />
       </section>
       <section>
-        {content}
+        <button onClick={fetchMoviesHandler}>Fetch Movies</button>
       </section>
+      <section>{content}</section>
     </React.Fragment>
   )
 }
